@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D 5-Region Lithium-Ion Battery Breakthrough Simulator &amp; Monograph</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+  </script>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">Li⁺</div>
+      <div>
+        <div class="brand-title">3D 5-Region Lithium-Ion Battery Breakthrough</div>
+        <div class="brand-sub">LiₓC₆ | LiᵧMn₂O₄ · Coupled Electrochemical–Thermal FVM · File #14 Resolution</div>
+      </div>
+    </div>
+
+    <nav class="main-nav" role="tablist">
+      <button class="nav-tab active" data-tab="sim" role="tab" aria-selected="true">
+        <span class="nav-dot"></span>3D Simulator
+      </button>
+      <button class="nav-tab" data-tab="bench" role="tab" aria-selected="false">
+        Solver Benchmark Lab
+      </button>
+      <button class="nav-tab" data-tab="docs" role="tab" aria-selected="false">
+        Physics &amp; Math Monograph
+      </button>
+    </nav>
+
+    <div class="topbar-status">
+      <span id="solver-status-pill" class="status-pill status-ready">Initializing…</span>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <!-- ==================== TAB 1: 3D SIMULATOR ==================== -->
+    <section id="tab-sim" class="tab-panel active">
+      <div class="sim-layout">
+        <!-- Left Sidebar: Simulation & Geometry Controls -->
+        <aside class="panel-sidebar">
+          <div class="card">
+            <div class="card-title">Cell Geometry &amp; Report Preset</div>
+            <label class="field-label" for="preset-select">Report Benchmark Geometry</label>
+            <select id="preset-select" class="input-select"></select>
+            <div id="preset-desc" class="helper-text"></div>
+
+            <div class="grid-2 mt-sm">
+              <div>
+                <label class="field-label" for="bc-select">Tab Placement</label>
+                <select id="bc-select" class="input-select">
+                  <option value="BC1">BC1 · Opposite Corners</option>
+                  <option value="BC2">BC2 · Aligned Top</option>
+                  <option value="BC3">BC3 · Top Edge NegCC</option>
+                  <option value="BC4">BC4 · Full Faces (1D)</option>
+                </select>
+              </div>
+              <div>
+                <label class="field-label" for="mesh-select">3D Mesh Resolution</label>
+                <select id="mesh-select" class="input-select">
+                  <option value="fast">Fast (3,360 cells)</option>
+                  <option value="standard" selected>Standard (7,200 cells)</option>
+                  <option value="fine">Fine Table-14 (13,824)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="check-row mt-sm">
+              <label class="toggle-label">
+                <input type="checkbox" id="clustered-check" />
+                <span>Interface-clustered x-grid (Fig. 22)</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Breakthrough Solver &amp; Operating Mode</div>
+            <label class="field-label" for="solver-select">3D Potential Linear Solver</label>
+            <select id="solver-select" class="input-select">
+              <option value="hyperbolic_minres" selected>Fixed Sec. 4 · Scaled Flux-Hyperbolic Block-MINRES</option>
+              <option value="xline_mg_pcg">Fixed Sec. 2.2 · Coupled X-Line MG-PCG</option>
+            </select>
+
+            <div class="slider-group mt-sm">
+              <div class="slider-head">
+                <label class="field-label" for="crate-slider">Discharge Rate (C-Rate)</label>
+                <span id="crate-val" class="mono-val">2.0 C (3.50 mA/cm²)</span>
+              </div>
+              <input type="range" id="crate-slider" min="0.5" max="5.0" step="0.5" value="2.0" />
+            </div>
+
+            <div class="grid-2 mt-sm">
+              <div>
+                <label class="field-label" for="dt-select">Time Step Δt</label>
+                <select id="dt-select" class="input-select">
+                  <option value="15">15 s</option>
+                  <option value="30" selected>30 s</option>
+                  <option value="60">60 s</option>
+                </select>
+              </div>
+              <div>
+                <label class="field-label" for="thermal-select">Thermal BC</label>
+                <select id="thermal-select" class="input-select">
+                  <option value="convective">Convective (h = 15)</option>
+                  <option value="top_ambient">Top 298.15 K (Fig. 9)</option>
+                  <option value="adiabatic">Adiabatic Insulated</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="btn-row mt-md">
+              <button id="btn-play" class="btn btn-primary">▶ Discharge</button>
+              <button id="btn-step" class="btn btn-secondary">Step +Δt</button>
+              <button id="btn-reset" class="btn btn-ghost">Reset</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">3D Field &amp; Cutaway Controls</div>
+            <div class="grid-2">
+              <div>
+                <label class="field-label" for="field-select">Color Field</label>
+                <select id="field-select" class="input-select">
+                  <option value="phiE" selected>Electrolyte Potential φₑ</option>
+                  <option value="phiS">Solid Potential φₛ</option>
+                  <option value="jLi">Reaction Current jᴸⁱ</option>
+                  <option value="ce">Salt Conc. cₑ</option>
+                  <option value="T">Temperature T</option>
+                  <option value="stoich">Solid Stoich. θₛ</option>
+                </select>
+              </div>
+              <div>
+                <label class="field-label" for="cmap-select">Colormap</label>
+                <select id="cmap-select" class="input-select">
+                  <option value="auto" selected>Auto Scientific</option>
+                  <option value="turbo">Turbo</option>
+                  <option value="viridis">Viridis</option>
+                  <option value="inferno">Inferno</option>
+                  <option value="rdbu">RdBu Diverging</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="slider-group mt-sm">
+              <div class="slider-head">
+                <label class="field-label" for="exag-slider">Thickness Exaggeration (x)</label>
+                <span id="exag-val" class="mono-val">100×</span>
+              </div>
+              <input type="range" id="exag-slider" min="5" max="250" step="5" value="100" />
+            </div>
+
+            <div class="check-row mt-sm">
+              <label class="toggle-label">
+                <input type="checkbox" id="explode-check" />
+                <span>Exploded 5-Layer View</span>
+              </label>
+              <label class="toggle-label">
+                <input type="checkbox" id="vectors-check" checked />
+                <span>3D Flux Vectors (F_f)</span>
+              </label>
+            </div>
+
+            <div class="slider-group mt-sm">
+              <div class="slider-head">
+                <label class="field-label" for="slicex-slider">Slice X (Thickness)</label>
+                <span id="slicex-val" class="mono-val">100%</span>
+              </div>
+              <input type="range" id="slicex-slider" min="0.1" max="1.0" step="0.05" value="1.0" />
+            </div>
+            <div class="slider-group">
+              <div class="slider-head">
+                <label class="field-label" for="slicey-slider">Slice Y (Height)</label>
+                <span id="slicey-val" class="mono-val">100%</span>
+              </div>
+              <input type="range" id="slicey-slider" min="0.1" max="1.0" step="0.05" value="1.0" />
+            </div>
+            <div class="slider-group">
+              <div class="slider-head">
+                <label class="field-label" for="slicez-slider">Slice Z (Width)</label>
+                <span id="slicez-val" class="mono-val">100%</span>
+              </div>
+              <input type="range" id="slicez-slider" min="0.1" max="1.0" step="0.05" value="1.0" />
+            </div>
+
+            <button id="btn-cam-reset" class="btn btn-ghost btn-sm mt-xs">Reset 3D Camera</button>
+          </div>
+        </aside>
+
+        <!-- Center + Right Workspace -->
+        <div class="sim-main">
+          <!-- KPI Ribbon -->
+          <div class="kpi-ribbon">
+            <div class="kpi-card">
+              <div class="kpi-label">Terminal Voltage</div>
+              <div id="kpi-vcell" class="kpi-val">— V</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Discharge Time / SOC</div>
+              <div id="kpi-time" class="kpi-val">0 s · 100%</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Peak Temperature</div>
+              <div id="kpi-temp" class="kpi-val">298.15 K</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Newton / Linear Iters</div>
+              <div id="kpi-iters" class="kpi-val">—</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Charge Balance Err</div>
+              <div id="kpi-charge" class="kpi-val">—</div>
+            </div>
+          </div>
+
+          <!-- 3D Viewport + Overlay HUD -->
+          <div class="viewport-wrap">
+            <div id="viewport-3d" class="viewport-canvas"></div>
+            <div class="hud-legend">
+              <div id="hud-field-title" class="hud-title">Electrolyte Potential φₑ (V)</div>
+              <div id="hud-colorbar" class="hud-bar"></div>
+              <div class="hud-ticks">
+                <span id="hud-min">0.000</span>
+                <span id="hud-mid">0.500</span>
+                <span id="hud-max">1.000</span>
+              </div>
+            </div>
+            <div class="hud-layers">
+              <span class="layer-chip cu">Cu CC</span>
+              <span class="layer-chip neg">LiₓC₆</span>
+              <span class="layer-chip sep">Sep</span>
+              <span class="layer-chip pos">LiᵧMn₂O₄</span>
+              <span class="layer-chip al">Al CC</span>
+            </div>
+            <div id="probe-box" class="hud-probe">
+              Click any cell in the 3D battery to inspect exact local fields.
+            </div>
+          </div>
+
+          <!-- Bottom Telemetry Charts + Region Table 18 -->
+          <div class="telemetry-grid">
+            <div class="card chart-card">
+              <div class="card-head-row">
+                <div class="card-title">Discharge Voltage &amp; Peak Temperature</div>
+              </div>
+              <canvas id="chart-discharge" class="chart-canvas"></canvas>
+            </div>
+
+            <div class="card chart-card">
+              <div class="card-head-row">
+                <div class="card-title">Through-Thickness 1D Profile (x = 0 → 346 µm)</div>
+                <span id="profile-coord" class="mono-tag">y=50%, z=50%</span>
+              </div>
+              <canvas id="chart-profile" class="chart-canvas"></canvas>
+            </div>
+
+            <div class="card table-card">
+              <div class="card-title">5-Region Extrema (Report Table 18 Format)</div>
+              <div class="table-wrap">
+                <table class="data-table" id="region-stats-table">
+                  <thead>
+                    <tr>
+                      <th>Region</th>
+                      <th>φₛ [min, max] (V)</th>
+                      <th>φₑ [min, max] (V)</th>
+                      <th>jᴸⁱ (A/cm³)</th>
+                      <th>T_max (K)</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: SOLVER BENCHMARK LAB ==================== -->
+    <section id="tab-bench" class="tab-panel">
+      <div class="bench-shell">
+        <div class="bench-header card">
+          <div>
+            <h2>Solver Benchmark Lab: Diagnosing &amp; Breaking the 2013 Convergence Wall</h2>
+            <p class="helper-text">
+              Runs the identical first-Newton coupled 3D potential Jacobian directly in the browser on your selected geometry
+              (default: <strong>Report Fig. 28, 6 × 4 cm × 0.0346 cm BC1</strong>) and compares the 2013 Primal GMRES+ILU/Jacobi
+              methods head-to-head against both breakthrough solvers.
+            </p>
+          </div>
+          <div class="bench-controls">
+            <select id="bench-preset" class="input-select"></select>
+            <button id="btn-run-bench" class="btn btn-primary">⚡ Run Live Solver Race</button>
+          </div>
+        </div>
+
+        <div id="bench-summary-cards" class="bench-kpis">
+          <div class="kpi-card">
+            <div class="kpi-label">Primal + ILU(0)/SSOR GMRES</div>
+            <div id="bench-ilu-val" class="kpi-val text-rose">Waiting…</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Fixed Sec. 4 · Flux-Hyp MINRES</div>
+            <div id="bench-hyp-val" class="kpi-val text-cyan">Waiting…</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Fixed Sec. 2.2 · X-Line MG-PCG</div>
+            <div id="bench-mg-val" class="kpi-val text-emerald">Waiting…</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">5-Region Scalar Laplace (Eq. 24)</div>
+            <div id="bench-lap-val" class="kpi-val text-amber">Waiting…</div>
+          </div>
+        </div>
+
+        <div class="bench-charts-grid">
+          <div class="card">
+            <div class="card-title">Live Head-to-Head Krylov / MINRES / PCG Convergence Race</div>
+            <p class="helper-text">Reproduces Report Figs. 14 &amp; 28 stalling vs. grid-independent convergence of both fixed solvers.</p>
+            <canvas id="chart-race" class="bench-canvas"></canvas>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Report Fig. 29 Reproduction: Left-Precond vs. True Residual</div>
+            <p class="helper-text">Unscaled left ILUT drops ‖M⁻¹r‖ while true residual ‖b − Ax‖ stagnates from 4.095 V cancellation.</p>
+            <canvas id="chart-fig29" class="bench-canvas"></canvas>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Exact Condition Number κ∞ vs. Conductivity Contrast (σ_CC / σ_p)</div>
+            <p class="helper-text">Naive Sec. 4 (T_r = L²/σ) &amp; Primal Elliptic explode as 10⁷–10¹⁶; Scaled Flux-Hyp stays bounded.</p>
+            <canvas id="chart-cond-contrast" class="bench-canvas"></canvas>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Exact Condition Number κ∞ vs. Cell Aspect Ratio (L_y / L_x)</div>
+            <p class="helper-text">From 1:1 coin cell up to 1,445:1 EV cell (50 cm): Block-Schur MINRES stays ≤ φ² = 2.618.</p>
+            <canvas id="chart-cond-aspect" class="bench-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: PHYSICS & MATH MONOGRAPH ==================== -->
+    <section id="tab-docs" class="tab-panel tab-docs-light">
+      <div id="monograph-root"></div>
+    </section>
+  </main>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
